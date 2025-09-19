@@ -1,6 +1,7 @@
 from pathlib import Path
 from configparser import ConfigParser
 from datetime import datetime
+from colorama import Fore, Style
 import subprocess, sys, os, signal
 
 root_path = Path(__file__).parent
@@ -39,7 +40,7 @@ def _ensure_log_file(app_name: str) -> Path:
 
 
 def _prompt_port(app_name: str, suggested: int) -> tuple[int, int]:
-    print(f"Starting {app_name}...")
+    print(f"{Fore.MAGENTA}{Style.BRIGHT}Starting {app_name}...{Style.RESET_ALL}")
     raw = input(f"On which port do you want this app to run? ({suggested}): ").strip()
     try:
         port = int(raw) if raw else suggested
@@ -76,14 +77,14 @@ def start_app(conf_file: Path, default_port: int) -> int:
     )
 
     apps[app_name] = {"proc": proc, "port": port, "conf": conf_file}
-    print(f"{app_name} is running on http://127.0.0.1:{port}")
+    print(f"{app_name} is running on http://127.0.0.1:{port}\n")
     return next_default
 
 
 def stop_app(app_name: str):
     entry = apps.get(app_name)
     if not entry or not entry["proc"]:
-        print(f"{app_name} is not running.")
+        print(f"{Fore.RED}{Style.BRIGHT}{app_name} is not running.{Style.RESET_ALL}")
         return
     proc = entry["proc"]
     if proc.poll() is None:
@@ -94,26 +95,26 @@ def stop_app(app_name: str):
             proc.kill()
             proc.wait()
     entry["proc"] = None
-    print(f"{app_name} has been stopped.")
+    print(f"{Fore.GREEN}{Style.BRIGHT}{app_name} has been stopped.{Style.RESET_ALL}")
 
 
 def reload_app(app_name: str):
     entry = apps.get(app_name)
     if not entry or not entry["proc"]:
-        print(f"{app_name} is not running.")
+        print(f"{Fore.RED}{Style.BRIGHT}{app_name} is not running.{Style.RESET_ALL}")
         return
     proc = entry["proc"]
     if proc.poll() is None:
         proc.send_signal(signal.SIGHUP)
-        print(f"{app_name} received SIGHUP (reload).")
+        print(f"{Fore.GREEN}{Style.BRIGHT}{app_name} received SIGHUP (reload).{Style.RESET_ALL}")
     else:
-        print(f"{app_name} is not running.")
+        print(f"{Fore.RED}{Style.BRIGHT}{app_name} is not running.{Style.RESET_ALL}")
 
 
 def restart_app(app_name: str):
     entry = apps.get(app_name)
     if not entry:
-        print(f"Unknown app: {app_name}")
+        print(f"{Fore.YELLOW}{Style.BRIGHT}Unknown app: {app_name}{Style.RESET_ALL}")
         return
     port = entry["port"] or 5000
     stop_app(app_name)
@@ -124,10 +125,11 @@ def shutdown(signum = None, frame = None):
     prefix = "S"
     if signum:
         prefix = f"Handling signal SIG{'INT' if signum == signal.SIGINT else 'TERM'}, s"
-    print(f"\n{prefix}hutting down...")
+    print(f"\n{Fore.MAGENTA}{Style.BRIGHT}{prefix}hutting down...{Style.RESET_ALL}")
     for app in apps:
         stop_app(app)
-    print("Thank you for playing the game of life... Bye!")
+    print(f"{Style.BRIGHT}Thank you for playing the game of life... Bye!{Style.RESET_ALL}")
+    sys.exit(0)
 
 
 def create_apps():
@@ -149,7 +151,9 @@ def menu():
 def current_apps() -> list[str]:
     names = sorted(apps.keys())
     for idx, name in enumerate(names, start=1):
-        status = "running" if apps[name]["proc"] and apps[name]["proc"].poll() is None else "stopped"
+        status = f"{Fore.GREEN}running{Style.RESET_ALL}" if (
+                apps[name]["proc"] and apps[name]["proc"].poll() is None
+        ) else f"{Fore.RED}stopped{Style.RESET_ALL}"
         port = apps[name]["port"]
         port_s = f":{port}" if port else ""
         print(f"\t{idx}. {name} [{status}{port_s}]")
@@ -159,8 +163,8 @@ def current_apps() -> list[str]:
 def main():
     prepare()
 
-    print("GrowVolution 2025 - App Control Script\n")
-    print("Starting your apps...")
+    print(f"\n{Style.BRIGHT}GrowVolution 2025 - App Control Script{Style.RESET_ALL}\n")
+    print(f"{Fore.YELLOW}{Style.BRIGHT}Starting your apps...{Style.RESET_ALL}")
     create_apps()
 
     while True:
@@ -178,11 +182,13 @@ def main():
             sys.exit(0)
 
         if cmd not in {"1", "2", "3", "4"}:
-            print("Invalid option.")
+            print(f"{Fore.YELLOW}{Style.BRIGHT}Invalid option.{Style.RESET_ALL}")
             continue
 
         if not choices:
-            print("No apps known. Put .conf files into app_configs/ and restart.")
+            print(f"{Fore.RED}{Style.BRIGHT}"
+                   "No apps known. Put .conf files into app_configs/ and restart."
+                  f"{Style.RESET_ALL}")
             continue
 
         print("Choose your target app by its number:")
@@ -193,7 +199,9 @@ def main():
                 raise ValueError
             chosen_app = choices[idx - 1]
         except ValueError:
-            print(f"{choice_raw} is not a valid number.")
+            print(f"{Fore.RED}{Style.BRIGHT}"
+                  f"{choice_raw} is not a valid number."
+                  f"{Style.RESET_ALL}")
             continue
 
         if cmd == "1":
@@ -205,7 +213,9 @@ def main():
         elif cmd == "4":
             entry = apps[chosen_app]
             if entry["proc"] and entry["proc"].poll() is None:
-                print(f"{chosen_app} is already running.")
+                print(f"{Fore.RED}{Style.BRIGHT}"
+                      f"{chosen_app} is already running."
+                      f"{Style.RESET_ALL}")
             else:
                 default = entry["port"] or 5000
                 entry["port"] = None
