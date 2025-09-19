@@ -1,0 +1,7 @@
+{% extends "base_example.html" %}
+{% block title %}{{ _('Home') }}{% endblock %}
+{% block content %}
+    <h2>{{ _('Welcome!') }}</h2>
+    <p>{{ _('This is your wonderful new app.') }}</p>
+    <img src="{{ url_for(NAME ~ '.static', filename='picture.jpg') }}" alt="{{ _('Picture') }}" width="650px" />
+{% endblock %}
