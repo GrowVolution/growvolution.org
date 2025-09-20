@@ -66,7 +66,7 @@ def start_app(conf_file: Path, default_port: int) -> int:
     proc = subprocess.Popen(
         [
             sys.executable, "-m", "uvicorn",
-            "--host", "127.0.0.1",
+            "--host", "0.0.0.0",
             "--port", f"{port}",
             "main:app",
         ],
@@ -77,7 +77,7 @@ def start_app(conf_file: Path, default_port: int) -> int:
     )
 
     apps[app_name] = {"proc": proc, "port": port, "conf": conf_file}
-    print(f"{app_name} is running on http://127.0.0.1:{port}\n")
+    print(f"{app_name} is running on http://0.0.0.0:{port}\n")
     return next_default
 
 
