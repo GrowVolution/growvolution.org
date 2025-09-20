@@ -14,7 +14,6 @@ apps: dict[str, dict] = {}
 def prepare():
     conf_path.mkdir(parents=True, exist_ok=True)
     logs_path.mkdir(parents=True, exist_ok=True)
-
     if not any(conf_path.glob("*.conf")):
         subprocess.run([sys.executable, str(root_path / "setup.py")], check=True)
 
@@ -24,7 +23,6 @@ def _env_from_conf(conf_file: Path) -> dict:
     cfg = ConfigParser()
     cfg.optionxform = str
     cfg.read(conf_file)
-
     for k, v in cfg.defaults().items():
         env[k] = v
     for section in cfg.sections():
@@ -55,13 +53,17 @@ def _promt_debug() -> str:
     return "1" if choice in {"y", "yes", "1"} else "0"
 
 
-def start_app(conf_file: Path, default_port: int) -> int:
+def start_app(conf_file: Path, default_port: int, reload: bool = False) -> int:
     app_name = conf_file.stem
     base_env = _env_from_conf(conf_file)
     base_env["APP_NAME"] = app_name
-    port, next_default = _prompt_port(app_name, default_port)
-    base_env["DEBUG_MODE"] = _promt_debug()
-
+    if reload and app_name in apps:
+        port = apps[app_name]["port"]
+        base_env["DEBUG_MODE"] = apps[app_name].get("debug", "0")
+        next_default = port + 1
+    else:
+        port, next_default = _prompt_port(app_name, default_port)
+        base_env["DEBUG_MODE"] = _promt_debug()
     log_file = _ensure_log_file(app_name)
     proc = subprocess.Popen(
         [
@@ -75,8 +77,7 @@ def start_app(conf_file: Path, default_port: int) -> int:
         env=base_env,
         cwd=root_path
     )
-
-    apps[app_name] = {"proc": proc, "port": port, "conf": conf_file}
+    apps[app_name] = {"proc": proc, "port": port, "conf": conf_file, "debug": base_env["DEBUG_MODE"]}
     print(f"{app_name} is running on http://0.0.0.0:{port}\n")
     return next_default
 
@@ -103,12 +104,10 @@ def reload_app(app_name: str):
     if not entry or not entry["proc"]:
         print(f"{Fore.RED}{Style.BRIGHT}{app_name} is not running.{Style.RESET_ALL}")
         return
-    proc = entry["proc"]
-    if proc.poll() is None:
-        proc.send_signal(signal.SIGHUP)
-        print(f"{Fore.GREEN}{Style.BRIGHT}{app_name} received SIGHUP (reload).{Style.RESET_ALL}")
-    else:
-        print(f"{Fore.RED}{Style.BRIGHT}{app_name} is not running.{Style.RESET_ALL}")
+    port = entry["port"] or 5000
+    stop_app(app_name)
+    start_app(entry["conf"], port, reload=True)
+    print(f"{Fore.GREEN}{Style.BRIGHT}{app_name} has been reloaded.{Style.RESET_ALL}")
 
 
 def restart_app(app_name: str):
@@ -162,35 +161,28 @@ def current_apps() -> list[str]:
 
 def main():
     prepare()
-
     print(f"\n{Style.BRIGHT}GrowVolution 2025 - App Control Script{Style.RESET_ALL}\n")
     print(f"{Fore.YELLOW}{Style.BRIGHT}Starting your apps...{Style.RESET_ALL}")
     create_apps()
-
     while True:
         print("\nYour apps:")
         choices = current_apps()
         menu()
         cmd = input("> ").strip()
-
         if cmd == "5":
             os.system("cls" if os.name == "nt" else "clear")
             continue
-
         if cmd == "6":
             shutdown()
             sys.exit(0)
-
         if cmd not in {"1", "2", "3", "4"}:
             print(f"{Fore.YELLOW}{Style.BRIGHT}Invalid option.{Style.RESET_ALL}")
             continue
-
         if not choices:
             print(f"{Fore.RED}{Style.BRIGHT}"
-                   "No apps known. Put .conf files into app_configs/ and restart."
+                  "No apps known. Put .conf files into app_configs/ and restart."
                   f"{Style.RESET_ALL}")
             continue
-
         print("Choose your target app by its number:")
         choice_raw = input("> ").strip()
         try:
@@ -203,7 +195,6 @@ def main():
                   f"{choice_raw} is not a valid number."
                   f"{Style.RESET_ALL}")
             continue
-
         if cmd == "1":
             reload_app(chosen_app)
         elif cmd == "2":
