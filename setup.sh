@@ -17,7 +17,7 @@ detect_pkg_mgr() {
 }
 
 ensure_python() {
-  if command -v python3 >/dev/null 2>&1; then return; fi
+  if python3 -m venv >/dev/null 2>&1; then return; fi
   echo "Missing python3."
 
   if ! is_root; then
