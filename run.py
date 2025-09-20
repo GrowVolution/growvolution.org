@@ -65,9 +65,9 @@ def start_app(conf_file: Path, default_port: int) -> int:
     log_file = _ensure_log_file(app_name)
     proc = subprocess.Popen(
         [
-            sys.executable, "-m", "gunicorn",
-            "-b", f"127.0.0.1:{port}",
-            "-k", "eventlet",
+            sys.executable, "-m", "uvicorn",
+            "--host", "127.0.0.1",
+            "--port", f"{port}",
             "main:app",
         ],
         stdout=open(log_file, "w"),
