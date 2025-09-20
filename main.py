@@ -1,5 +1,5 @@
-from eventlet import monkey_patch
-monkey_patch()
-
+from asgiref.wsgi import WsgiToAsgi
 from app import create_app
-app = create_app()
+
+wsgi_app = create_app()
+app = WsgiToAsgi(wsgi_app)
