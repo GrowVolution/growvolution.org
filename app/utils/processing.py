@@ -25,12 +25,11 @@ def after_request(response):
 
 
 def handle_app_error(error):
-    eid = random_code()
-    exception(error, f"Handling app request failed ({eid}).")
-
     if isinstance(error, NotFound):
         return render_template("404.html"), 404
 
+    eid = random_code()
+    exception(error, f"Handling app request failed ({eid}).")
     return render_template("error.html"), 501
 
 

@@ -1,4 +1,5 @@
 from flask import Flask
+from jinja2 import ChoiceLoader, PrefixLoader, FileSystemLoader
 from pathlib import Path
 from importlib import import_module
 from configparser import ConfigParser
@@ -75,6 +76,8 @@ def register_modules(app: Flask):
         log("warn", f"Missing [modules] section in '{app_name}.conf'.")
         return
 
+    loader_context = {}
+    primary_loader = None
     for mod_name, setting in config["modules"].items():
         enabled = setting.strip().lower() in ["true", "1", "yes"]
         if not enabled:
@@ -92,8 +95,19 @@ def register_modules(app: Flask):
             continue
 
         try:
-            home = os.getenv("HOME_MODULE", False)
+            home = os.getenv("HOME_MODULE", "").lower() == mod_name.lower()
             register(app, home)
-            log("info", f"Registered module '{mod_name}'")
+            loader_context[mod_name] = FileSystemLoader(f"modules/{mod_name}/templates")
+            if home:
+                primary_loader = loader_context[mod_name]
+            log("info", f"Registered module '{mod_name}' as {'home' if home else 'path'}.")
         except Exception as e:
             exception(e, f"Failed registering module '{mod_name}'.")
+
+    loaders = []
+    if primary_loader:
+        loaders.append(primary_loader)
+    loaders.append(PrefixLoader(loader_context))
+    loaders.append(FileSystemLoader(f"app/templates"))
+
+    app.jinja_loader = ChoiceLoader(loaders)
