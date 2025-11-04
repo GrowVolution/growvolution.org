@@ -19,5 +19,6 @@ asgiref
 requests
 redis
 pytz
+pywin32
 
 colorama

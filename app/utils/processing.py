@@ -2,12 +2,16 @@ from flask import request, render_template
 from werkzeug.exceptions import NotFound
 
 from ..utils import random_code
+from ..utils.translating import get_locale
 from ..socket import default_handlers, no_handler
 from utils.debugger import log, exception
 
 
 def context_processor():
-    return dict()
+    return dict(
+        PATH=request.path,
+        LANG=get_locale()
+    )
 
 
 def before_request():

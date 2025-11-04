@@ -4,12 +4,31 @@ from pathlib import Path
 from importlib import import_module
 from configparser import ConfigParser
 from colorama import Fore, Style
+from functools import wraps
 import os
 
 from utils.debugger import log, exception
 
 module_home = Path(__file__).parent
 conf_path = module_home.parent / "app_configs"
+
+
+def require_extensions(*extensions):
+    def decorator(func):
+        from app.utils import enabled
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for ext in extensions:
+                if not isinstance(ext, str):
+                    log("warn", f"Invalid extension '{ext}'.")
+                    continue
+                if not enabled(f"EXT_{ext.upper()}"):
+                    raise RuntimeError(f"Extension '{ext}' is not enabled.")
+            return func(*args, **kwargs)
+
+        return wrapper
+    return decorator
 
 
 def generate_modlib(app_name: str):

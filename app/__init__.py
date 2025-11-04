@@ -90,9 +90,11 @@ def create_app(config_name: str = "default") -> Flask:
     if enabled("EXT_BABEL"):
         from .extensions import babel
         from .i18n import DBDomain
+        from .utils.translating import set_locale
         domain = DBDomain()
         babel.init_app(app, default_domain=domain)
         app.extensions["babel_domain"] = domain
+        app.route("/lang/<locale>")(set_locale)
 
     if enabled("EXT_FST"):
         if not ext_database:

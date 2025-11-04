@@ -2,6 +2,7 @@ from pathlib import Path
 from configparser import ConfigParser
 from datetime import datetime
 from colorama import Fore, Style
+from argparse import ArgumentParser
 import subprocess, sys, os, signal
 
 root_path = Path(__file__).parent
@@ -62,8 +63,8 @@ def start_app(conf_file: Path, default_port: int, reload: bool = False) -> int:
         base_env["DEBUG_MODE"] = apps[app_name].get("debug", "0")
         next_default = port + 1
     else:
-        port, next_default = _prompt_port(app_name, default_port)
-        base_env["DEBUG_MODE"] = _promt_debug()
+        port, next_default = _prompt_port(app_name, default_port) if args.interactive else (default_port, None)
+        base_env["DEBUG_MODE"] = args.debug if args.debug or not args.interactive else _promt_debug()
     log_file = _ensure_log_file(app_name)
     proc = subprocess.Popen(
         [
@@ -216,4 +217,18 @@ def main():
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
-    main()
+
+    parser = ArgumentParser()
+    parser.add_argument("-i", "--interactive", action="store_true")
+    parser.add_argument("-d", "--debug", action="store_true")
+    parser.add_argument("-p", "--port", type=int, default=5000)
+    parser.add_argument("-a", "--app", type=str, default='app1')
+
+    args = parser.parse_args()
+    if args.interactive:
+        main()
+    else:
+        conf = conf_path / f"{args.app}.conf"
+        start_app(conf, args.port)
+        proc = apps[args.app]["proc"]
+        proc.wait()

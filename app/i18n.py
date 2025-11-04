@@ -1,9 +1,9 @@
 from flask_babelplus import Domain
 from babel.support import Translations
-from flask import Flask, current_app, request, has_request_context
+from flask import Flask, current_app
 
 from .data.babel import I18nMessage
-from .utils.translating import t, tn
+from .utils.translating import t, tn, get_locale
 from utils.debugger import debug_msg
 
 
@@ -44,11 +44,7 @@ class DBMergedTranslations(Translations):
 
 class DBDomain(Domain):
     def get_translations(self):
-        default = current_app.config.get("BABEL_DEFAULT_LOCALE", "en")
-        if has_request_context():
-            locale = request.args.get("lang") or request.accept_languages.best_match([default, "de"])
-        else:
-            locale = default
+        locale = get_locale()
 
         wrapped = Translations.load(
             dirname=current_app.config.get("BABEL_TRANSLATION_DIRECTORIES", "translations"),
