@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template
+from flask import Blueprint
 
 from .handling import your_endpoint
+from .utils import render_template
 
 
 def init_routes(bp: Blueprint):

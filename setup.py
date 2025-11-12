@@ -30,6 +30,10 @@ def base_config():
             "default_REDIS_URL": "redis://redis:6379",
         },
 
+        "babel": {
+            "default_SUPPORTED_LOCALES": "en;de",
+        },
+
         "security": {
             "protected_SECURITY_PASSWORD_SALT": token_hex(32),
         },
@@ -131,7 +135,25 @@ def setup_app(app_number):
 
     print(f"{Fore.GREEN}{Style.BRIGHT}"
           f"Okay, you have successfully created {app}. 🥳"
-          f"{Style.RESET_ALL}\n\n")
+          f"{Style.RESET_ALL}\n")
+
+    if (input(f"{Fore.MAGENTA}{Style.BRIGHT}"
+              f"Do you want to register {app} as a service? (y/N): "
+              f"{Style.RESET_ALL}\n").lower().strip() in ["yes", "y", "1"]):
+        from utils.service_registry import register
+        try:
+            port_input = input("On which port do you want your service to run? (5000): ").strip()
+            port = int(port_input) if port_input else 5000
+        except ValueError:
+            port = 5000
+        debug = (input("Do you want your service to run in debug mode? (y/N): ")
+                 .lower().strip() in ["yes", "y", "1"])
+        register(app, port, debug)
+        print(f"{Fore.GREEN}{Style.BRIGHT}"
+              f"Okay, you have successfully registered {app} as a service. 🚀"
+              f"{Style.RESET_ALL}\n\n")
+    else:
+        print()
 
 
 def setup():

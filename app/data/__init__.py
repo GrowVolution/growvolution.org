@@ -9,3 +9,9 @@ def init_models():
         if file.stem == "__init__":
             continue
         import_module(f"app.data.{file.stem}")
+
+
+def add_model(model):
+    from ..extensions import db
+    db.
+

@@ -36,8 +36,10 @@ class DefaultConfig:
     # -------------------------------------------------
     # Flask-BabelPlus (i18n/l10n)
     # -------------------------------------------------
-    BABEL_DEFAULT_LOCALE = "en"
-    BABEL_DEFAULT_TIMEZONE = "UTC"
+    BABEL_DEFAULT_LOCALE = "de"
+    SUPPORTED_LOCALES = os.getenv("SUPPORTED_LOCALES", BABEL_DEFAULT_LOCALE)
+    BABEL_DEFAULT_TIMEZONE = "Europe/Berlin"
+    BABEL_TRANSLATION_DIRECTORIES = "translations"
 
     # -------------------------------------------------
     # Flask-Security-Too

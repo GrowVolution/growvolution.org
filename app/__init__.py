@@ -87,10 +87,14 @@ def create_app(config_name: str = "default") -> Flask:
         socket.on("default_event")(socket_event_handler)
         socket.on_error_default(handle_socket_error)
 
-    if enabled("EXT_BABLE"):
+    if enabled("EXT_BABEL"):
         from .extensions import babel
         from .i18n import DBDomain
-        babel.init_app(app, default_domain=DBDomain())
+        from .utils.translating import set_locale
+        domain = DBDomain()
+        babel.init_app(app, default_domain=domain)
+        app.extensions["babel_domain"] = domain
+        app.route("/lang/<locale>")(set_locale)
 
     if enabled("EXT_FST"):
         if not ext_database:

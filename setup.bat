@@ -14,6 +14,7 @@ if not exist "%SETUP_PY%" (
 )
 
 set "PYTHON="
+set "PYTHON_ARGS="
 call :find_python || (
   echo Python not found. Please install Python 3 and ensure it is on PATH. 1>&2
   exit /b 1
@@ -21,7 +22,7 @@ call :find_python || (
 
 if not exist "%VENV_PYTHON%" (
   echo Creating virtual environment in "%VENV_DIR%"...
-  "%PYTHON%" -m venv "%VENV_DIR%"
+  "%PYTHON%" %PYTHON_ARGS% -m venv "%VENV_DIR%"
   if errorlevel 1 (
     echo Failed to create virtual environment. 1>&2
     exit /b 1
@@ -62,12 +63,14 @@ exit /b %errorlevel%
   if not errorlevel 1 (
     py -3 -c "import sys" >nul 2>&1
     if not errorlevel 1 (
-      set "PYTHON=py -3"
+      set "PYTHON=py"
+      set "PYTHON_ARGS=-3"
       goto :eof
     )
     py -c "import sys" >nul 2>&1
     if not errorlevel 1 (
       set "PYTHON=py"
+      set "PYTHON_ARGS="
       goto :eof
     )
   )
@@ -128,21 +131,21 @@ exit /b %errorlevel%
 
   echo Extracting messages to "%POT%"...
   if defined PYBABEL_USE_MODULE (
-    "%VENV_PYTHON%" -m babel.messages.frontend extract -F "%CFG%" -o "%POT%" "%SCRIPT_DIR%"
+    call "%VENV_PYTHON%" -m babel.messages.frontend extract -F "%CFG%" -o "%POT%" "%SCRIPT_DIR%"
   ) else (
-    "%PYBABEL%" extract -F "%CFG%" -o "%POT%" "%SCRIPT_DIR%"
+    call "%PYBABEL%" extract -F "%CFG%" -o "%POT%" "%SCRIPT_DIR%"
   )
   if errorlevel 1 exit /b 1
 
   if exist "%TRANS%\en\LC_MESSAGES\messages.po" (
-    echo Updating existing catalogs (en)...
+    echo "Updating existing catalogs (en)..."
     if defined PYBABEL_USE_MODULE (
       "%VENV_PYTHON%" -m babel.messages.frontend update -i "%POT%" -d "%TRANS%"
     ) else (
       "%PYBABEL%" update -i "%POT%" -d "%TRANS%"
     )
   ) else (
-    echo Initializing catalogs (en)...
+    echo "Initializing catalogs (en)..."
     if defined PYBABEL_USE_MODULE (
       "%VENV_PYTHON%" -m babel.messages.frontend init -i "%POT%" -d "%TRANS%" -l en
     ) else (

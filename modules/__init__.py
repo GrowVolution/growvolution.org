@@ -1,14 +1,34 @@
 from flask import Flask
+from jinja2 import ChoiceLoader, PrefixLoader, FileSystemLoader
 from pathlib import Path
 from importlib import import_module
 from configparser import ConfigParser
 from colorama import Fore, Style
+from functools import wraps
 import os
 
 from utils.debugger import log, exception
 
 module_home = Path(__file__).parent
 conf_path = module_home.parent / "app_configs"
+
+
+def require_extensions(*extensions):
+    def decorator(func):
+        from app.utils import enabled
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for ext in extensions:
+                if not isinstance(ext, str):
+                    log("warn", f"Invalid extension '{ext}'.")
+                    continue
+                if not enabled(f"EXT_{ext.upper()}"):
+                    raise RuntimeError(f"Extension '{ext}' is not enabled.")
+            return func(*args, **kwargs)
+
+        return wrapper
+    return decorator
 
 
 def generate_modlib(app_name: str):
@@ -75,6 +95,8 @@ def register_modules(app: Flask):
         log("warn", f"Missing [modules] section in '{app_name}.conf'.")
         return
 
+    loader_context = {}
+    primary_loader = None
     for mod_name, setting in config["modules"].items():
         enabled = setting.strip().lower() in ["true", "1", "yes"]
         if not enabled:
@@ -92,8 +114,19 @@ def register_modules(app: Flask):
             continue
 
         try:
-            home = os.getenv("HOME_MODULE", False)
+            home = os.getenv("HOME_MODULE", "").lower() == mod_name.lower()
             register(app, home)
-            log("info", f"Registered module '{mod_name}'")
+            loader_context[mod_name] = FileSystemLoader(f"modules/{mod_name}/templates")
+            if home:
+                primary_loader = loader_context[mod_name]
+            log("info", f"Registered module '{mod_name}' as {'home' if home else 'path'}.")
         except Exception as e:
             exception(e, f"Failed registering module '{mod_name}'.")
+
+    loaders = []
+    if primary_loader:
+        loaders.append(primary_loader)
+    loaders.append(PrefixLoader(loader_context))
+    loaders.append(FileSystemLoader(f"app/templates"))
+
+    app.jinja_loader = ChoiceLoader(loaders)

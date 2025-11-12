@@ -2,12 +2,16 @@ from flask import request, render_template
 from werkzeug.exceptions import NotFound
 
 from ..utils import random_code
+from ..utils.translating import get_locale
 from ..socket import default_handlers, no_handler
 from utils.debugger import log, exception
 
 
 def context_processor():
-    return dict()
+    return dict(
+        PATH=request.path,
+        LANG=get_locale()
+    )
 
 
 def before_request():
@@ -25,12 +29,11 @@ def after_request(response):
 
 
 def handle_app_error(error):
-    eid = random_code()
-    exception(error, f"Handling app request failed ({eid}).")
-
     if isinstance(error, NotFound):
         return render_template("404.html"), 404
 
+    eid = random_code()
+    exception(error, f"Handling app request failed ({eid}).")
     return render_template("error.html"), 501
 
 

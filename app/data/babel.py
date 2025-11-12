@@ -10,3 +10,6 @@ class I18nMessage(db.Model):
     text = db.Column(db.Text, nullable=False)
 
     __table_args__ = (db.UniqueConstraint("domain", "locale", "key"),)
+
+
+def add_entry

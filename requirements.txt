@@ -14,9 +14,11 @@ flask-jwt-extended
 pymysql
 python-dotenv
 authlib
-gunicorn
-eventlet
+uvicorn
+asgiref
 requests
 redis
+pytz
+pywin32
 
 colorama
